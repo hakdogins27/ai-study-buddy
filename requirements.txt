@@ -1,0 +1,9 @@
+# requirements.txt
+
+Flask
+gunicorn
+python-dotenv
+httpx
+firebase-admin
+flask-cors
+flask-talisman

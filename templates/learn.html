@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Study Buddy - Chat</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="{{ url_for('static', filename='js/firebase-init.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    {% include '_navigation.html' %}
+
+    <div class="header-bar">
+        <h1>🧠 Chat with Onyx</h1>
+        <div class="header-buttons">
+            <button id="take-quiz-btn" class="button-primary" style="display: none;">Take Quiz!</button>
+            <button id="new-topic-btn" class="button-secondary" style="display: none;">Start New Topic</button>
+        </div>
+    </div>
+
+    <div id="chat-container">
+        <div id="chat-log">
+            <!-- Chat messages appear here -->
+        </div>
+        <form id="input-form">
+            <input type="text" id="user-input" placeholder="Loading..." autocomplete="off">
+            <!-- THE FIX IS HERE: Replaced the old button with a new one containing an SVG icon -->
+            <button type="submit" id="send-btn" aria-label="Send Message">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                </svg>
+            </button>
+        </form>
+    </div>
+</body>
+</html>

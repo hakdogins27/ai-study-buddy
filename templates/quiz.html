@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Quiz</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="{{ url_for('static', filename='js/firebase-init.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    {% include '_navigation.html' %}
+
+    <main class="quiz-container">
+        <h1 id="quiz-header">📝 Quiz Time!</h1>
+       
+        <p id="quiz-status" style="text-align: center; margin-top: 1em;"></p>
+        
+        <div id="quiz-main" style="display: none;">
+            <div id="question-container">
+                <!-- Question content is injected here -->
+            </div>
+            <div class="quiz-navigation">
+                <button id="next-question-btn" class="button-primary">Next →</button>
+            </div>
+        </div>
+
+        <div id="results-container" style="display: none;">
+            <h2>Quiz Complete!</h2>
+            <p id="final-score"></p>
+            <div class="results-actions">
+                <a href="/learn" class="button-secondary">Start a New Lesson</a>
+                <a href="/dashboard" class="button-primary">Back to Dashboard</a>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

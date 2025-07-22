@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome - AI Study Buddy</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="{{ url_for('static', filename='js/firebase-init.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    {% include '_navigation.html' %}
+
+    <main class="container">
+        <div class="home-hero">
+            <h1 id="home-welcome-header">Welcome to Onyx!</h1>
+            <p class="subtitle">
+                I'm Onyx, your personal AI study buddy. I'm here to help you master any subject. 
+                Just start a conversation in the "Learn" section, and I'll provide clear explanations. 
+                When you're ready, I'll create a quiz based on our chat to test your knowledge.
+            </p>
+            <div class="home-actions">
+                <a href="/learn" class="button-primary">Start a New Lesson</a>
+                <a href="/dashboard" class="button-secondary">View Your Progress</a>
+            </div>
+            <p class="developer-credit">
+                <!-- IMPORTANT: Replace with your actual names! -->
+                Developed by Anthony Mendoza
+            </p>
+        </div>
+    </main>
+</body>
+</html>

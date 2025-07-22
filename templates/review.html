@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Review - AI Study Buddy</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="{{ url_for('static', filename='js/firebase-init.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    {% include '_navigation.html' %}
+
+    <main class="review-container">
+        <h1>Quiz Review</h1>
+        <h2 id="review-header"></h2>
+        
+        <p id="review-loading-status">Loading your review...</p>
+        
+        <div id="review-content" style="display: none;">
+            <!-- Review questions will be injected here by JavaScript -->
+        </div>
+
+        <div class="results-actions">
+            <a href="/learn" class="button-secondary">Start a New Lesson</a>
+            <a href="/dashboard" class="button-primary">Back to Dashboard</a>
+        </div>
+    </main>
+</body>
+</html>

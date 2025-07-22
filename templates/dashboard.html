@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - AI Study Buddy</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="{{ url_for('static', filename='js/firebase-init.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    {% include '_navigation.html' %}
+
+    <main class="container dashboard-container">
+        <h1>Your Learning Dashboard</h1>
+        
+        <section class="stats-grid">
+            <div class="stat-card">
+                <h3>Total Lessons Taken</h3>
+                <p id="total-lessons-stat">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Average Quiz Score</h3>
+                <p id="average-score-stat">N/A</p>
+            </div>
+        </section>
+
+        <section class="history-section">
+            <h2>Lesson History</h2>
+            <div id="history-table-container">
+                <p id="history-loading-status">Loading your lesson history...</p>
+                <table id="history-table" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Topic</th>
+                            <th>Score</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body">
+                        <!-- History rows will be injected here by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        
+        <section class="start-lesson-cta">
+            <h2>Ready for your next lesson?</h2>
+            <a href="/learn" class="button-primary">Start New Lesson</a>
+        </section>
+    </main>
+
+    <!-- NEW: Welcome Modal -->
+    <div id="welcome-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h2>Welcome to Onyx!</h2>
+            <p>
+                This is your personal AI study buddy. Start a conversation on any topic in the "Learn" section, and Onyx will generate a personalized quiz to test your knowledge.
+            </p>
+            <p>
+                Happy learning!
+            </p>
+            <button id="modal-close-btn" class="button-primary modal-close-btn">Let's Get Started</button>
+            <p class="developer-credit">
+                <!-- IMPORTANT: Replace with your actual names! -->
+                Developed by John Doe & Jane Smith
+            </p>
+        </div>
+    </div>
+
+</body>
+</html>

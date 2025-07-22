@@ -20,19 +20,27 @@ API_KEY = os.getenv("TOGETHER_API_KEY")
 
 # NEW: Smartly initialize Firebase for Vercel (production) and local development
 # This block replaces the old initialization logic.
+# ... (keep your existing import statements) ...
+
+# --- Initialization ---
+load_dotenv()
+API_KEY = os.getenv("TOGETHER_API_KEY")
+UNSPLASH_ACCESS_KEY = os.getenv("UNSPLASH_ACCESS_KEY")
+
+# Smartly initialize Firebase for Vercel (production) and local development
 if os.getenv('VERCEL_ENV') == 'production':
-    # In Vercel, read the JSON content directly from the environment variable
     print("Vercel environment detected. Initializing Firebase from environment variable.")
     service_account_json_str = os.getenv('FIREBASE_SERVICE_ACCOUNT_KEY')
-    
-    # --- THIS IS THE NEW DEBUG LINE ---
-    print(f"RAW ENV VAR VALUE RECEIVED: '{service_account_json_str}'")
-    
     if not service_account_json_str:
-        print("FATAL ERROR: FIREBASE_SERVICE_ACCOUNT_KEY environment variable was empty.")
+        print("FATAL ERROR: FIREBASE_SERVICE_ACCOUNT_KEY environment variable not found or empty.")
     else:
         try:
             service_account_info = json.loads(service_account_json_str)
+            
+            # --- THIS IS THE CRITICAL FIX ---
+            # It finds the broken newline characters in the private key and restores them.
+            service_account_info['private_key'] = service_account_info['private_key'].replace('\\n', '\n')
+            
             cred = credentials.Certificate(service_account_info)
             if not firebase_admin._apps:
                 firebase_admin.initialize_app(cred)
@@ -40,7 +48,7 @@ if os.getenv('VERCEL_ENV') == 'production':
         except Exception as e:
             print(f"Error initializing Firebase from environment variable: {e}")
 else:
-    # Locally, read the JSON from the file path defined in your .env
+    # Locally, read the JSON from the file path
     print("Local environment detected. Initializing Firebase from file path.")
     SERVICE_ACCOUNT_KEY_PATH = os.getenv("FIREBASE_SERVICE_ACCOUNT_KEY_PATH") 
     if not SERVICE_ACCOUNT_KEY_PATH or not os.path.exists(SERVICE_ACCOUNT_KEY_PATH):
@@ -53,6 +61,8 @@ else:
             print("Firebase Admin SDK initialized successfully for local development.")
         except Exception as e:
             print(f"Error initializing Firebase from file: {e}")
+
+# ... (the rest of your app.py remains the same) ...
 
 app = Flask(__name__)
 CORS(app)
@@ -341,4 +351,3 @@ if __name__ == "__main__":
     app.run(debug=True)
 
     # Triggering a fresh Vercel Deployment from vscodes
-    

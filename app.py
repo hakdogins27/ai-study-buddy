@@ -18,51 +18,54 @@ from datetime import datetime
 load_dotenv()
 API_KEY = os.getenv("TOGETHER_API_KEY")
 
-# NEW: Smartly initialize Firebase for Vercel (production) and local development
-# This block replaces the old initialization logic.
-# ... (keep your existing import statements) ...
-
-# --- Initialization ---
-load_dotenv()
-API_KEY = os.getenv("TOGETHER_API_KEY")
-UNSPLASH_ACCESS_KEY = os.getenv("UNSPLASH_ACCESS_KEY")
-
-# Smartly initialize Firebase for Vercel (production) and local development
-if os.getenv('VERCEL_ENV') == 'production':
-    print("Vercel environment detected. Initializing Firebase from environment variable.")
-    service_account_json_str = os.getenv('FIREBASE_SERVICE_ACCOUNT_KEY')
-    if not service_account_json_str:
-        print("FATAL ERROR: FIREBASE_SERVICE_ACCOUNT_KEY environment variable not found or empty.")
+# --- FINAL, ROBUST FIREBASE INITIALIZATION ---
+# This method uses separate environment variables to avoid formatting errors
+# with the single large JSON key. This is the standard for production.
+try:
+    # This dictionary will be assembled from individual environment variables
+    creds_json = {
+        "type": "service_account",
+        "project_id": os.getenv("FIREBASE_PROJECT_ID"),
+        "private_key_id": os.getenv("FIREBASE_PRIVATE_KEY_ID"),
+        "client_email": os.getenv("FIREBASE_CLIENT_EMAIL"),
+        "client_id": os.getenv("FIREBASE_CLIENT_ID"),
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+        "client_x509_cert_url": os.getenv("FIREBASE_CLIENT_X509_CERT_URL"),
+        "universe_domain": "googleapis.com"
+    }
+    
+    # Handle the private key formatting, which is the most common failure point
+    private_key = os.getenv("FIREBASE_PRIVATE_KEY")
+    if private_key:
+        # Vercel's environment variable system replaces newlines with '\\n'.
+        # This line correctly restores them to the format the crypto library needs.
+        creds_json["private_key"] = private_key.replace('\\n', '\n')
+    
+    # Check if all required keys were found in the environment
+    required_keys = ["project_id", "private_key", "client_email"]
+    if all(creds_json.get(key) for key in required_keys):
+        cred = credentials.Certificate(creds_json)
+        if not firebase_admin._apps:
+            firebase_admin.initialize_app(cred)
+        print("Firebase Admin SDK initialized successfully.")
     else:
-        try:
-            service_account_info = json.loads(service_account_json_str)
-            
-            # --- THIS IS THE CRITICAL FIX ---
-            # It finds the broken newline characters in the private key and restores them.
-            service_account_info['private_key'] = service_account_info['private_key'].replace('\\n', '\n')
-            
-            cred = credentials.Certificate(service_account_info)
+        # This will run if the environment variables are not set correctly
+        # Fallback for local development using the JSON file
+        print("One or more Firebase environment variables missing. Falling back to local file.")
+        local_key_path = os.getenv("FIREBASE_SERVICE_ACCOUNT_KEY_PATH")
+        if local_key_path and os.path.exists(local_key_path):
+            cred = credentials.Certificate(local_key_path)
             if not firebase_admin._apps:
                 firebase_admin.initialize_app(cred)
-            print("Firebase Admin SDK initialized successfully for Vercel.")
-        except Exception as e:
-            print(f"Error initializing Firebase from environment variable: {e}")
-else:
-    # Locally, read the JSON from the file path
-    print("Local environment detected. Initializing Firebase from file path.")
-    SERVICE_ACCOUNT_KEY_PATH = os.getenv("FIREBASE_SERVICE_ACCOUNT_KEY_PATH") 
-    if not SERVICE_ACCOUNT_KEY_PATH or not os.path.exists(SERVICE_ACCOUNT_KEY_PATH):
-        print(f"FATAL ERROR: Service account key file not found at path: '{SERVICE_ACCOUNT_KEY_PATH}'")
-    else:
-        try:
-            cred = credentials.Certificate(SERVICE_ACCOUNT_KEY_PATH)
-            if not firebase_admin._apps:
-                firebase_admin.initialize_app(cred)
-            print("Firebase Admin SDK initialized successfully for local development.")
-        except Exception as e:
-            print(f"Error initializing Firebase from file: {e}")
+            print("Firebase Admin SDK initialized successfully from local file.")
+        else:
+             print("FATAL ERROR: No Firebase credentials found in environment or local file path.")
 
-# ... (the rest of your app.py remains the same) ...
+except Exception as e:
+    print(f"FATAL ERROR during Firebase initialization: {e}")
+
 
 app = Flask(__name__)
 CORS(app)
@@ -149,84 +152,7 @@ def token_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-def match_patterns(patterns, question, user_answer):
-    try:
-        user_answer = int(re.sub(r"[^0-9\-]", "", str(user_answer)))
-    except:
-        return None, None
-
-    for pattern, operation in patterns:
-        match = re.search(pattern, question, re.IGNORECASE)
-        if match:
-            try:
-                groups = match.groups()
-                nums = [int(g) for g in groups if g.lstrip('-').isdigit()]
-                if len(nums) >= operation.__code__.co_argcount:
-                    correct = operation(*nums)
-                    return user_answer == correct, correct
-            except Exception as e:
-                print(f"[ERROR] Failed to compute answer: {e}")
-                continue
-    return None, None
-
-
-def validate_addition(question, user_answer):
-    patterns = [
-        (r"(\d+)\s*\+\s*(\d+)", lambda a, b: a + b),
-        (r"have (\d+).*?(add|bake|make|get|receive).*?(\d+)", lambda a, b: a + b),
-    ]
-    return match_patterns(patterns, question, user_answer)
-
-
-def validate_subtraction(question, user_answer):
-    patterns = [
-        (r"(\d+)\s*\-\s*(\d+)", lambda a, b: a - b),
-        (r"if .*?have (\d+).*?(eat|give).*?(\d+)", lambda a, b: a - b),
-    ]
-    return match_patterns(patterns, question, user_answer)
-
-
-def validate_multiplication(question, user_answer):
-    patterns = [
-        (r"(\d+)\s*\*\s*(\d+)", lambda a, b: a * b),
-        (r"(\d+) times (\d+)", lambda a, b: a * b),
-    ]
-    return match_patterns(patterns, question, user_answer)
-
-
-def validate_division(question, user_answer):
-    patterns = [
-        (r"(\d+)\s*/\s*(\d+)", lambda a, b: a // b if b != 0 else None),
-        (r"(\d+) divided by (\d+)", lambda a, b: a // b if b != 0 else None),
-    ]
-    return match_patterns(patterns, question, user_answer)
-
-
-def validate_arithmetic(question, user_answer):
-    for validator in [
-        validate_addition,
-        validate_subtraction,
-        validate_multiplication,
-        validate_division
-    ]:
-        is_correct, correct = validator(question, user_answer)
-        if is_correct is not None:
-            return is_correct, correct
-    return None, None
-
-
-
-def generate_next_addition_question(current_max):
-    num1 = random.randint(1, current_max + 5)
-    num2 = random.randint(1, current_max + 5)
-    return f"What is {num1} + {num2}?"
-
-def truncate_if_ai_answers_own_question(ai_message, latest_question):
-    if latest_question in ai_message:
-        index = ai_message.find(latest_question) + len(latest_question)
-        return ai_message[:index].strip() + " 🤖 Now it's your turn!"
-    return ai_message
-    
+# --- Routes for Rendering HTML Templates ---
 @app.route("/")
 def index(): return render_template("index.html")
 @app.route("/login")
@@ -244,6 +170,7 @@ def quiz(): return render_template("quiz.html")
 @app.route("/review/<quiz_id>")
 def review(quiz_id): return render_template("review.html")
 
+# --- API Endpoints ---
 @app.route("/save-lesson", methods=["POST"])
 @token_required
 def save_lesson():
@@ -257,7 +184,6 @@ def save_lesson():
             return jsonify({'error': 'Missing topic or conversation data'}), 400
 
         lessons_ref = db.collection('users').document(uid).collection('lessons')
-
         lessons_ref.add({
             'topic': topic,
             'conversation': conversation,
@@ -265,10 +191,9 @@ def save_lesson():
             'userId': uid
         })
         return jsonify({'success': True}), 201
-
     except Exception as e:
-        print(f"!!! CRITICAL ERROR in /save-lesson: {e} !!!")
-        return jsonify({"error": "Failed to save lesson"}), 500
+        print(f"!!! CRITICAL ERROR in /save-lesson route: {e} !!!")
+        return jsonify({"error": "Failed to save lesson", "details": str(e)}), 500
 
 
 @app.route("/ask-ai", methods=["POST"])
@@ -286,24 +211,24 @@ def ask_ai():
         messages_for_api = [{"role": "system", "content": system_prompt_tutor}] + messages_from_client
         
         headers = {"Authorization": f"Bearer {API_KEY}"}
-        body = {"model": MODEL, "messages": messages_for_api, "max_tokens": 300}
+        body = {
+            "model": MODEL,
+            "messages": messages_for_api,
+            "max_tokens": 300
+        }
 
         response = httpx.post(BASE_URL, headers=headers, json=body, timeout=60.0)
         response.raise_for_status()
-        
+
         ai_message = response.json()["choices"][0]["message"]["content"]
-        
-        # This function doesn't exist in your provided code, so I've commented it out.
-        # If you want to prevent the AI from answering its own questions, you can add it back.
-        # ai_message = clean_ai_self_answer(ai_message)
 
         return jsonify({"response": ai_message})
 
-    except httpx.HTTPStatusError as e:
-        return jsonify({"error": "The AI service is temporarily unavailable."}), 503
     except Exception as e:
-        print(f"!!! CRITICAL ERROR in /ask-ai: {e} !!!")
-        return jsonify({"error": "An unexpected error occurred."}), 500
+        print(f"!!! CRITICAL ERROR in /ask-ai route: {e} !!!")
+        if isinstance(e, httpx.HTTPStatusError) and e.response.status_code == 503:
+            return jsonify({"error": "The AI service is temporarily unavailable. Please try again later."}), 503
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/generate-quiz", methods=["POST"])
@@ -311,9 +236,7 @@ def ask_ai():
 def generate_quiz():
     try:
         data = request.get_json()
-        topic = data.get("topic")
-        conversation = data.get("conversation")
-        conversation_length = data.get("conversationLength")
+        topic, conversation, conversation_length = data.get("topic"), data.get("conversation"), data.get("conversationLength")
 
         if not all([conversation, topic, conversation_length]):
             return jsonify({"error": "Missing topic, conversation, or conversation length."}), 400
@@ -349,5 +272,3 @@ def generate_quiz():
 
 if __name__ == "__main__":
     app.run(debug=True)
-
-    # Triggering a fresh Vercel Deployment from vscodes

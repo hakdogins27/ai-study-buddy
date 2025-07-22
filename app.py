@@ -18,10 +18,20 @@ from datetime import datetime
 load_dotenv()
 API_KEY = os.getenv("TOGETHER_API_KEY")
 
-# --- FINAL, ROBUST FIREBASE INITIALIZATION ---
-# This method uses separate environment variables to avoid formatting errors
-# with the single large JSON key. This is the standard for production.
+# --- FINAL, ROBUST FIREBASE INITIALIZATION WITH DEEP DEBUGGING ---
 try:
+    print("--- STARTING FIREBASE INITIALIZATION ---")
+    
+    # --- LIE DETECTOR: Print every single variable as the server sees it ---
+    print(f"FIREBASE_PROJECT_ID: '{os.getenv('FIREBASE_PROJECT_ID')}'")
+    print(f"FIREBASE_PRIVATE_KEY_ID: '{os.getenv('FIREBASE_PRIVATE_KEY_ID')}'")
+    print(f"FIREBASE_CLIENT_EMAIL: '{os.getenv('FIREBASE_CLIENT_EMAIL')}'")
+    print(f"FIREBASE_CLIENT_ID: '{os.getenv('FIREBASE_CLIENT_ID')}'")
+    print(f"FIREBASE_CLIENT_X509_CERT_URL: '{os.getenv('FIREBASE_CLIENT_X509_CERT_URL')}'")
+    # For the private key, we'll just check if it exists to avoid printing the whole secret
+    private_key_exists = "Exists" if os.getenv("FIREBASE_PRIVATE_KEY") else "!!! NOT FOUND or EMPTY !!!"
+    print(f"FIREBASE_PRIVATE_KEY: {private_key_exists}")
+
     # This dictionary will be assembled from individual environment variables
     creds_json = {
         "type": "service_account",
@@ -49,23 +59,21 @@ try:
         cred = credentials.Certificate(creds_json)
         if not firebase_admin._apps:
             firebase_admin.initialize_app(cred)
-        print("Firebase Admin SDK initialized successfully.")
+        print("--- FIREBASE INITIALIZATION SUCCESSFUL ---")
     else:
-        # This will run if the environment variables are not set correctly
-        # Fallback for local development using the JSON file
-        print("One or more Firebase environment variables missing. Falling back to local file.")
+        print("--- FATAL ERROR: One or more required Firebase environment variables were missing or empty. ---")
+        # Fallback for local development
         local_key_path = os.getenv("FIREBASE_SERVICE_ACCOUNT_KEY_PATH")
         if local_key_path and os.path.exists(local_key_path):
             cred = credentials.Certificate(local_key_path)
             if not firebase_admin._apps:
                 firebase_admin.initialize_app(cred)
-            print("Firebase Admin SDK initialized successfully from local file.")
+            print("--- Firebase initialized from local file instead. ---")
         else:
-             print("FATAL ERROR: No Firebase credentials found in environment or local file path.")
+             print("--- FATAL ERROR: No valid credentials found in environment or local file. ---")
 
 except Exception as e:
-    print(f"FATAL ERROR during Firebase initialization: {e}")
-
+    print(f"--- FATAL EXCEPTION during Firebase initialization: {e} ---")
 
 app = Flask(__name__)
 CORS(app)
